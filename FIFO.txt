@@ -1,0 +1,214 @@
+import java.io.*;
+
+public class FIFO_PageReplacement {
+    public static void main(String[] args) throws IOException {
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+        // Variables
+        int totalFrames;          // Number of available memory frames
+        int nextReplaceIndex = 0; // Points to the frame that will be replaced next
+        int hitCount = 0;         // Number of page hits
+        int faultCount = 0;       // Number of page faults
+        int refStringLength;      // Length of reference string
+
+        int[] frames;             // Memory frames
+        int[] referenceString;    // Reference string (sequence of page requests)
+        int[][] memoryLayout;     // To store memory status after each page request
+
+        // Step 1: Input number of frames
+        System.out.print("Enter the number of frames: ");
+        totalFrames = Integer.parseInt(reader.readLine());
+
+        // Step 2: Input length of reference string
+        System.out.print("Enter the length of the reference string: ");
+        refStringLength = Integer.parseInt(reader.readLine());
+
+        // Step 3: Initialize arrays
+        frames = new int[totalFrames];
+        referenceString = new int[refStringLength];
+        memoryLayout = new int[refStringLength][totalFrames];
+
+        // Step 4: Set all frames as empty (-1 means empty)
+        for (int i = 0; i < totalFrames; i++) {
+            frames[i] = -1;
+        }
+
+        // Step 5: Input the reference string
+        System.out.println("Enter the reference string (space-separated or line-by-line): ");
+        for (int i = 0; i < refStringLength; i++) {
+            referenceString[i] = Integer.parseInt(reader.readLine());
+        }
+
+        System.out.println();
+
+        // Step 6: Process each page in the reference string
+        for (int i = 0; i < refStringLength; i++) {
+            int currentPage = referenceString[i];
+            boolean pageFound = false;
+
+            // Step 6.1: Check if the page is already in a frame (HIT)
+            for (int j = 0; j < totalFrames; j++) {
+                if (frames[j] == currentPage) {
+                    hitCount++;
+                    pageFound = true;
+                    break;
+                }
+            }
+
+            // Step 6.2: If page not found (FAULT), replace using FIFO
+            if (!pageFound) {
+                frames[nextReplaceIndex] = currentPage;
+                faultCount++;
+                nextReplaceIndex++;
+
+                // Wrap around if we reach the end of the frame list
+                if (nextReplaceIndex == totalFrames) {
+                    nextReplaceIndex = 0;
+                }
+            }
+
+            // Step 6.3: Record current frame status for display later
+            for (int j = 0; j < totalFrames; j++) {
+                memoryLayout[i][j] = frames[j];
+            }
+        }
+
+        // Step 7: Display memory layout after processing all pages
+        System.out.println("Memory layout after each reference:");
+        for (int frame = 0; frame < totalFrames; frame++) {
+            for (int ref = 0; ref < refStringLength; ref++) {
+                System.out.printf("%3d ", memoryLayout[ref][frame]);
+            }
+            System.out.println();
+        }
+
+        // Step 8: Display hit/fault summary
+        System.out.println("\nTotal Page Hits  : " + hitCount);
+        System.out.println("Total Page Faults: " + faultCount);
+        System.out.printf("Hit Ratio        : %.2f\n", (float) hitCount / refStringLength);
+    }
+}
+
+
+import java.io.*;
+public class FIFO {
+public static void main(String[] args) throws IOException
+{
+BufferedReader br = new BufferedReader(new
+InputStreamReader(System.in));
+int frames, pointer = 0, hit = 0, fault = 0,ref_len;
+int buffer[];
+int reference[];
+int mem_layout[][];
+System.out.println("Please enter the number of Frames: ");
+frames = Integer.parseInt(br.readLine());
+System.out.println("Please enter the length of the Reference string: ");
+ref_len = Integer.parseInt(br.readLine());
+reference = new int[ref_len];
+mem_layout = new int[ref_len][frames];
+buffer = new int[frames];
+for(int j = 0; j < frames; j++)
+buffer[j] = -1;
+System.out.println("Please enter the reference string: ");
+for(int i = 0; i < ref_len; i++)
+{
+reference[i] = Integer.parseInt(br.readLine());
+}
+System.out.println();
+for(int i = 0; i < ref_len; i++)
+{
+int search = -1;
+for(int j = 0; j < frames; j++)
+{
+if(buffer[j] == reference[i])
+{
+search = j;
+hit++;
+break;
+}
+}
+if(search == -1)
+{
+buffer[pointer] = reference[i];
+fault++;
+pointer++;
+if(pointer == frames)
+pointer = 0;
+}
+for(int j = 0; j < frames; j++)
+mem_layout[i][j] = buffer[j];
+}
+for(int i = 0; i < frames; i++)
+{
+for(int j = 0; j < ref_len; j++)
+System.out.printf("%3d ",mem_layout[j][i]);
+System.out.println();
+}
+System.out.println("The number of Hits: " + hit);
+System.out.println("Hit Ratio: " + (float)((float)hit/ref_len));
+System.out.println("The number of Faults: " + fault);
+}
+}
+
+
+
+import java.io.*;
+public class FIFO {
+public static void main(String[] args) throws IOException
+{
+BufferedReader br = new BufferedReader(new
+InputStreamReader(System.in));
+int frames, pointer = 0, hit = 0, fault = 0,ref_len;
+int buffer[];
+int reference[];
+int mem_layout[][];
+System.out.println("Please enter the number of Frames: ");
+frames = Integer.parseInt(br.readLine());
+System.out.println("Please enter the length of the Reference string: ");
+ref_len = Integer.parseInt(br.readLine());
+reference = new int[ref_len];
+mem_layout = new int[ref_len][frames];
+buffer = new int[frames];
+for(int j = 0; j < frames; j++)
+buffer[j] = -1;
+System.out.println("Please enter the reference string: ");
+for(int i = 0; i < ref_len; i++)
+{
+reference[i] = Integer.parseInt(br.readLine());
+}
+System.out.println();
+for(int i = 0; i < ref_len; i++)
+{
+int search = -1;
+for(int j = 0; j < frames; j++)
+{
+if(buffer[j] == reference[i])
+{
+search = j;
+hit++;
+break;
+}
+}
+if(search == -1)
+{
+buffer[pointer] = reference[i];
+fault++;
+pointer++;
+if(pointer == frames)
+pointer = 0;
+}
+for(int j = 0; j < frames; j++)
+mem_layout[i][j] = buffer[j];
+}
+for(int i = 0; i < frames; i++)
+{
+for(int j = 0; j < ref_len; j++)
+System.out.printf("%3d ",mem_layout[j][i]);
+System.out.println();
+}
+System.out.println("The number of Hits: " + hit);
+System.out.println("Hit Ratio: " + (float)((float)hit/ref_len));
+System.out.println("The number of Faults: " + fault);
+}
+}

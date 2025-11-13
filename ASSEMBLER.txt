@@ -1,0 +1,357 @@
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+
+public class PassOne {
+ÿ ÿ int lc=0;
+ÿ ÿ int libtab_ptr=0,pooltab_ptr=0;
+ÿ ÿ int symIndex=0,litIndex=0;
+ÿ ÿ LinkedHashMap<String, TableRow> SYMTAB;
+ÿ ÿ ArrayList<TableRow> LITTAB;
+ÿ ÿ ArrayList<Integer> POOLTAB;
+ÿ ÿ private BufferedReader br;
+
+ÿ ÿ public PassOne()
+ÿ ÿ {
+ÿ ÿ ÿ ÿ SYMTAB =new LinkedHashMap<>();
+ÿ ÿ ÿ ÿ LITTAB=new ArrayList<>();
+ÿ ÿ ÿ ÿ POOLTAB=new ArrayList<>();
+ÿ ÿ ÿ ÿ lc=0;
+ÿ ÿ ÿ ÿ POOLTAB.add(0);
+ÿ ÿ }
+ÿ ÿ public static void main(String[] args) {
+ÿ ÿ ÿ ÿ PassOne one=new PassOne();
+ÿ ÿ ÿ ÿ try
+ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ one.parseFile();
+ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ catch (Exception e) {
+ÿ ÿ ÿ ÿ ÿ ÿ System.out.println("Error: "+e); ÿ// 
+ÿ ÿ ÿ ÿ }
+ÿ ÿ }
+ÿ ÿ public void parseFile() throws Exception
+ÿ ÿ { String prev="";
+ÿ ÿ ÿ ÿ String line,code;
+ÿ ÿ ÿ ÿ br = new BufferedReader(new FileReader("sample.asm"));
+ÿ ÿ ÿ ÿ BufferedWriter bw=new BufferedWriter(new FileWriter("IC.txt"));
+ÿ ÿ ÿ ÿ INSTtable lookup=new INSTtable();
+ÿ ÿ ÿ ÿ while((line=br.readLine())!=null)
+ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ 
+ÿ ÿ ÿ ÿ ÿ ÿ String parts[]=line.split("\\s+");
+ÿ ÿ ÿ ÿ ÿ ÿ if(!parts[0].isEmpty()) //processing of label
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if(SYMTAB.containsKey(parts[0]))
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ SYMTAB.put(parts[0], new TableRow(parts[0], lc, SYMTAB.get(parts[0]).getIndex()));
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ else
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ SYMTAB.put(parts[0],new TableRow(parts[0], lc, ++symIndex));
+ÿ ÿ ÿ ÿ ÿ ÿ }
+
+ÿ ÿ ÿ ÿ ÿ ÿ if(parts[1].equals("LTORG"))
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int ptr=POOLTAB.get(pooltab_ptr);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ for(int j=ptr;j<libtab_ptr;j++)
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ lc++;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ LITTAB.set(j, new TableRow(LITTAB.get(j).getSymbol(),lc));
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(DL,01)\t(C,"+LITTAB.get(j).symbol+")";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ pooltab_ptr++;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ POOLTAB.add(libtab_ptr);
+ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ if(parts[1].equals("START"))
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ lc=expr(parts[2]);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(AD,01)\t(C,"+lc+")";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ prev="START";
+ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ else if(parts[1].equals("ORIGIN"))
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ lc=expr(parts[2]);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String splits[]=parts[2].split("\\+"); //Same for - SYMBOL //Add code
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(AD,03)\t(S,"+SYMTAB.get(splits[0]).getIndex()+")+"+Integer.parseInt(splits[1]);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ }
+
+ÿ ÿ ÿ ÿ ÿ ÿ //Now for EQU
+ÿ ÿ ÿ ÿ ÿ ÿ if(parts[1].equals("EQU"))
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int loc=expr(parts[2]);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ //below If conditions are optional as no IC is generated for them
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if(parts[2].contains("+"))
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String splits[]=parts[2].split("\\+");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(AD,04)\t(S,"+SYMTAB.get(splits[0]).getIndex()+")+"+Integer.parseInt(splits[1]);
+
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ else if(parts[2].contains("-"))
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String splits[]=parts[2].split("\\-");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(AD,04)\t(S,"+SYMTAB.get(splits[0]).getIndex()+")-"+Integer.parseInt(splits[1]);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ else
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(AD,04)\t(C,"+Integer.parseInt(parts[2]+")");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if(SYMTAB.containsKey(parts[0]))
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ SYMTAB.put(parts[0], new TableRow(parts[0],loc,SYMTAB.get(parts[0]).getIndex())) ;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ else
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ SYMTAB.put(parts[0], new TableRow(parts[0],loc,++symIndex)); ÿ ÿ 
+ÿ ÿ ÿ ÿ ÿ ÿ }
+
+ÿ ÿ ÿ ÿ ÿ ÿ if(parts[1].equals("DC"))
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ lc++;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int constant=Integer.parseInt(parts[2].replace("'",""));
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(DL,01)\t(C,"+constant+")";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ else if(parts[1].equals("DS"))
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ 
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int size=Integer.parseInt(parts[2].replace("'", ""));
+
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(DL,02)\t(C,"+size+")";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ /*if(prev.equals("START"))
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ lc=lc+size-1;//System.out.println("here");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ 
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ else
+*/ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿlc=lc+size;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ prev="";
+ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ if(lookup.getType(parts[1]).equals("IS"))
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(IS,0"+lookup.getCode(parts[1])+")\t";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int j=2;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String code2="";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ while(j<parts.length)
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ parts[j]=parts[j].replace(",", "");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if(lookup.getType(parts[j]).equals("RG"))
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code2+=lookup.getCode(parts[j])+"\t";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ else
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if(parts[j].contains("="))
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ parts[j]=parts[j].replace("=", "").replace("'", "");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ LITTAB.add(new TableRow(parts[j], -1,++litIndex));
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ libtab_ptr++;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code2+="(L,"+(litIndex)+")";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ else if(SYMTAB.containsKey(parts[j]))
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int ind=SYMTAB.get(parts[j]).getIndex();
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code2+= "(S,0"+ind+")"; 
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ else
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ SYMTAB.put(parts[j], new TableRow(parts[j],-1,++symIndex));
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int ind=SYMTAB.get(parts[j]).getIndex();
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code2+= "(S,0"+ind+")";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ j++;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ lc++;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code=code+code2;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ 
+ÿ ÿ ÿ ÿ ÿ ÿ if(parts[1].equals("END"))
+ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int ptr=POOLTAB.get(pooltab_ptr);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ for(int j=ptr;j<libtab_ptr;j++)
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ lc++;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ LITTAB.set(j, new TableRow(LITTAB.get(j).getSymbol(),lc));
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(DL,01)\t(C,"+LITTAB.get(j).symbol+")";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ pooltab_ptr++;
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ POOLTAB.add(libtab_ptr);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ code="(AD,02)";
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ bw.write(code+"\n");
+ÿ ÿ ÿ ÿ ÿ ÿ }
+
+ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ bw.close();
+ÿ ÿ ÿ ÿ printSYMTAB();
+ÿ ÿ ÿ ÿ //Printing Literal table
+ÿ ÿ ÿ ÿ PrintLITTAB();
+ÿ ÿ ÿ ÿ printPOOLTAB();
+ÿ ÿ }
+ÿ ÿ void PrintLITTAB() throws IOException
+ÿ ÿ {
+ÿ ÿ ÿ ÿ BufferedWriter bw=new BufferedWriter(new FileWriter("LITTAB.txt"));
+ÿ ÿ ÿ ÿ System.out.println("\nLiteral Table\n");
+ÿ ÿ ÿ ÿ //Processing LITTAB
+ÿ ÿ ÿ ÿ for(int i=0;i<LITTAB.size();i++)
+ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ TableRow row=LITTAB.get(i);
+ÿ ÿ ÿ ÿ ÿ ÿ System.out.println(i+"\t"+row.getSymbol()+"\t"+row.getAddess());
+ÿ ÿ ÿ ÿ ÿ ÿ bw.write((i+1)+"\t"+row.getSymbol()+"\t"+row.getAddess()+"\n");
+ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ bw.close();
+ÿ ÿ }
+ÿ ÿ void printPOOLTAB() throws IOException
+ÿ ÿ {
+ÿ ÿ ÿ ÿ BufferedWriter bw=new BufferedWriter(new FileWriter("POOLTAB.txt"));
+ÿ ÿ ÿ ÿ System.out.println("\nPOOLTAB");
+ÿ ÿ ÿ ÿ System.out.println("Index\t#first");
+ÿ ÿ ÿ ÿ for (int i = 0; i < POOLTAB.size(); i++) {
+ÿ ÿ ÿ ÿ ÿ ÿ System.out.println(i+"\t"+POOLTAB.get(i));
+ÿ ÿ ÿ ÿ ÿ ÿ bw.write((i+1)+"\t"+POOLTAB.get(i)+"\n");
+ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ bw.close();
+ÿ ÿ }
+ÿ ÿ void printSYMTAB() throws IOException
+ÿ ÿ {
+ÿ ÿ ÿ ÿ BufferedWriter bw=new BufferedWriter(new FileWriter("SYMTAB.txt"));
+ÿ ÿ ÿ ÿ //Printing Symbol Table
+ÿ ÿ ÿ ÿ java.util.Iterator<String> iterator = SYMTAB.keySet().iterator();
+ÿ ÿ ÿ ÿ System.out.println("SYMBOL TABLE");
+ÿ ÿ ÿ ÿ while (iterator.hasNext()) {
+ÿ ÿ ÿ ÿ ÿ ÿ String key = iterator.next().toString();
+ÿ ÿ ÿ ÿ ÿ ÿ TableRow value = SYMTAB.get(key);
+
+ÿ ÿ ÿ ÿ ÿ ÿ System.out.println(value.getIndex()+"\t" + value.getSymbol()+"\t"+value.getAddess());
+ÿ ÿ ÿ ÿ ÿ ÿ bw.write(value.getIndex()+"\t" + value.getSymbol()+"\t"+value.getAddess()+"\n");
+ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ bw.close();
+ÿ ÿ }
+ÿ ÿ public int expr(String str)
+ÿ ÿ {
+ÿ ÿ ÿ ÿ int temp=0;
+ÿ ÿ ÿ ÿ if(str.contains("+"))
+ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ String splits[]=str.split("\\+");
+ÿ ÿ ÿ ÿ ÿ ÿ temp=SYMTAB.get(splits[0]).getAddess()+Integer.parseInt(splits[1]);
+ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ else if(str.contains("-"))
+ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ String splits[]=str.split("\\-");
+ÿ ÿ ÿ ÿ ÿ ÿ temp=SYMTAB.get(splits[0]).getAddess()-(Integer.parseInt(splits[1]));
+ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ else
+ÿ ÿ ÿ ÿ {
+ÿ ÿ ÿ ÿ ÿ ÿ temp=Integer.parseInt(str);
+ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ return temp;
+ÿ ÿ }
+}
+
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.HashMap;
+
+public class Pass2 {
+ÿ ÿ private static final String INTERMEDIATE_CODE_FILE = "/home/student/IC.txt";
+ÿ ÿ private static final String SYM_TAB_FILE = "/home/student/SYMTAB.txt";
+ÿ ÿ private static final String LITERALS_FILE = "/home/student/LITTAB.txt";
+ÿ ÿ private static final String OUTPUT_FILE = "/home/student/Pass2.txt";
+
+ÿ ÿ public static void main(String[] args) {
+ÿ ÿ ÿ ÿ HashMap<Integer, String> symSymbol = new HashMap<>();
+ÿ ÿ ÿ ÿ HashMap<Integer, String> litAddr = new HashMap<>();
+
+ÿ ÿ ÿ ÿ try (
+ÿ ÿ ÿ ÿ ÿ ÿ BufferedReader b1 = new BufferedReader(new FileReader(INTERMEDIATE_CODE_FILE));
+ÿ ÿ ÿ ÿ ÿ ÿ BufferedReader b2 = new BufferedReader(new FileReader(SYM_TAB_FILE));
+ÿ ÿ ÿ ÿ ÿ ÿ BufferedReader b3 = new BufferedReader(new FileReader(LITERALS_FILE));
+ÿ ÿ ÿ ÿ ÿ ÿ FileWriter f1 = new FileWriter(OUTPUT_FILE)
+ÿ ÿ ÿ ÿ ) {
+ÿ ÿ ÿ ÿ ÿ ÿ String line;
+
+ÿ ÿ ÿ ÿ ÿ ÿ // Read symbol table: format assumed [index] [address]
+ÿ ÿ ÿ ÿ ÿ ÿ while ((line = b2.readLine()) != null) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String[] words = line.trim().split("\\s+");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if (words.length >= 2) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int index = Integer.parseInt(words[0]);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ symSymbol.put(index, words[1].trim());
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ }
+
+ÿ ÿ ÿ ÿ ÿ ÿ // Read literals: format assumed [literal] [address]
+ÿ ÿ ÿ ÿ ÿ ÿ int litIndex = 1;
+ÿ ÿ ÿ ÿ ÿ ÿ while ((line = b3.readLine()) != null) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String[] words = line.trim().split("\\s+");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if (words.length >= 2) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ litAddr.put(litIndex++, words[1].trim());
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+ÿ ÿ ÿ ÿ ÿ ÿ }
+
+ÿ ÿ ÿ ÿ ÿ ÿ // Process intermediate code
+ÿ ÿ ÿ ÿ ÿ ÿ while ((line = b1.readLine()) != null) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ line = line.trim();
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if (line.isEmpty()) continue;
+
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String[] parts = line.split("\\s+");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ StringBuilder output = new StringBuilder("+ ");
+
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ for (String part : parts) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ part = part.trim();
+
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ if (part.startsWith("(IS,")) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String opcode = part.substring(4, part.length() - 1);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ output.append(opcode).append(" ");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ } else if (part.matches("\\d+")) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ output.append(part).append(" ");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ } else if (part.startsWith("(R,")) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String reg = part.substring(3, part.length() - 1);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ output.append(reg).append(" ");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ } else if (part.startsWith("(S,")) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int index = Integer.parseInt(part.substring(3, part.length() - 1));
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ output.append(symSymbol.getOrDefault(index, "000")).append(" ");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ } else if (part.startsWith("(L,")) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ int index = Integer.parseInt(part.substring(3, part.length() - 1));
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ output.append(litAddr.getOrDefault(index, "000")).append(" ");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ } else if (part.startsWith("(C,")) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String constant = part.substring(3, part.length() - 1);
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ output.append(constant).append(" ");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ } else if (part.contains("+")) {
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ// Handles expressions like (S,1)+1
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿString[] expr = part.split("\\+");
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿString symbolPart = expr[0].trim();
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ String offsetPart = expr[1].trim();
+
+ÿ ÿ if (symbolPart.startsWith("(S,") && symbolPart.endsWith(")")) {
+ÿ ÿ ÿ ÿ int index = Integer.parseInt(symbolPart.substring(3, symbolPart.length() - 1));
+ÿ ÿ ÿ ÿ int base = Integer.parseInt(symSymbol.getOrDefault(index, "0"));
+ÿ ÿ ÿ ÿ int offset = Integer.parseInt(offsetPart);
+ÿ ÿ ÿ ÿ output.append(base + offset).append(" ");
+ÿ ÿ }
+}
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ }
+
+ÿ ÿ ÿ ÿ ÿ ÿ ÿ ÿ f1.write(output.toString().trim() + "\n");
+ÿ ÿ ÿ ÿ ÿ ÿ }
+
+ÿ ÿ ÿ ÿ } catch (IOException e) {
+ÿ ÿ ÿ ÿ ÿ ÿ System.err.println("Error occurred while processing files: " + e.getMessage());
+ÿ ÿ ÿ ÿ }
+ÿ ÿ }
+}
+
+
+
+
+
+
+
+
